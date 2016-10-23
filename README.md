@@ -43,6 +43,29 @@ Fatures
    * `delete`
    * `insert`
 
+Command line help
+----
+```
+gcqlsh -h
+Usage of gcqlsh:
+  -f string
+        Execute file containing cql statements instead of having interacive session
+  -fail-on-error
+        Stop execution if statement from file fails.
+  -host string
+        Cassandra host to connect to (default "127.0.0.1")
+  -k string
+        Default keyspace to connect to (default "system")
+  -no-color
+        Console without colors
+  -port int
+        Cassandra RPC port (default 9042)
+  -print-confirmation
+        Print 'ok' on successfuly executed cql statement from the file
+  -print-cql
+        Print Statements that are executed from a file
+```
+
 Planned features
 ----
  * `desc` for table
