@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -440,9 +441,10 @@ func runInteractiveSession(cks *cqlKeyspaceSession) error {
 			),
 		),
 	)
+	home := os.Getenv("HOME")
 	config := &readline.Config{
 		Prompt:                 fmt.Sprintf("%s:%s> ", ProgramPromptPrefix, cks.ActiveKeyspace),
-		HistoryFile:            "/tmp/.readline-multiline",
+		HistoryFile:            path.Join(home, ".gcqlsh-history"),
 		DisableAutoSaveHistory: true,
 		AutoComplete:           completer,
 		InterruptPrompt:        "^C",
