@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -22,12 +23,25 @@ type cqlKeyspaceSession struct {
 	Port           int
 	Session        *gocql.Session
 	ActiveKeyspace string
+	NewSchema      bool
+	IsInitialized  bool
 }
 
+// FetchKeyspaces obtains the list of all keyspaces available
 func (cks *cqlKeyspaceSession) FetchKeyspaces() ([]string, error) {
 	var keyspaceName string
 	keyspaces := make([]string, 0)
-	iter := cks.Session.Query("select keyspace_name from system.schema_keyspaces").Iter()
+	// We need to have info on what type of schema
+	if !cks.IsInitialized {
+		cks.Init()
+	}
+	var cqlSchemaSelect string
+	if cks.NewSchema {
+		cqlSchemaSelect = "select keyspace_name from system_schema.keyspaces"
+	} else {
+		cqlSchemaSelect = "select keyspace_name from system.schema_keyspaces"
+	}
+	iter := cks.Session.Query(cqlSchemaSelect).Iter()
 	for iter.Scan(&keyspaceName) {
 		keyspaces = append(keyspaces, keyspaceName)
 	}
@@ -37,31 +51,43 @@ func (cks *cqlKeyspaceSession) FetchKeyspaces() ([]string, error) {
 	return keyspaces, nil
 }
 
+// FetchTables returns a list of all tables in the Active keyspace
 func (cks *cqlKeyspaceSession) FetchTables() ([]string, error) {
-	var tableName string
 	tables := make([]string, 0)
-	iter := cks.Session.Query("select columnfamily_name from system.schema_columnfamilies where keyspace_name = ?", cks.ActiveKeyspace).Iter()
-	for iter.Scan(&tableName) {
-		tables = append(tables, tableName)
+
+	if schema, err := cks.Session.KeyspaceMetadata(cks.ActiveKeyspace); err == nil {
+		for table, _ := range schema.Tables {
+			tables = append(tables, table)
+		}
 	}
-	if err := iter.Close(); err != nil {
-		return nil, err
-	}
+
 	return tables, nil
 }
 
-func Min(x, y int) int {
-	if x < y {
-		return x
+func (cks *cqlKeyspaceSession) FetchColumns(tableName string) (map[string]*gocql.ColumnMetadata, error) {
+	schema, err := cks.Session.KeyspaceMetadata(cks.ActiveKeyspace)
+	if err != nil {
+		return nil, err
 	}
-	return y
+
+	tm, ok := schema.Tables[tableName]
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Table %s not in schema", tableName))
+	}
+
+	return tm.Columns, nil
 }
 
-func Max(x, y int) int {
-	if x > y {
-		return x
+// Init method for switching the new/old schema detection
+func (cks *cqlKeyspaceSession) Init() {
+	cks.NewSchema = false
+	if schemaKS, err := cks.Session.KeyspaceMetadata("system"); err == nil {
+		if _, ok := schemaKS.Tables["schema_keyspaces"]; !ok {
+			cks.NewSchema = true
+		}
 	}
-	return y
+	// newSchema := cks.Session.KeyspaceMetadata("system_schema").Tables["keyspaces"]
+	cks.IsInitialized = true
 }
 
 func printVal(col gocql.ColumnInfo, value interface{}) string {
@@ -269,6 +295,7 @@ func describeCmd(cks *cqlKeyspaceSession, cmd string) error {
 	}
 
 	if strings.HasPrefix(desc, "keyspace") || strings.HasPrefix(desc, "KEYSPACE") {
+		// TODO:
 		return nil
 	}
 
@@ -281,6 +308,40 @@ func describeCmd(cks *cqlKeyspaceSession, cmd string) error {
 	}
 
 	if strings.HasPrefix(desc, "table") || strings.HasPrefix(desc, "TABLE") {
+		tableName := strings.TrimPrefix(strings.TrimPrefix(desc, "table"), "TABLE")
+		tableName = strings.TrimSuffix(tableName, ";")
+		tableName = strings.TrimSpace(tableName)
+
+		columns, _ := cks.FetchColumns(tableName)
+		colWidthName := 0
+		colWidthType := 0
+
+		colsData := make(map[string]string, len(columns))
+
+		for _, col := range columns {
+			colsData[col.Name] = fmt.Sprintf("%s", col.Type)
+			if len(col.Name) > colWidthName {
+				colWidthName = len(col.Name)
+			}
+			if len(col.Name) > colWidthType {
+				colWidthType = len(col.Name)
+			}
+		}
+		fmt.Printf(fmt.Sprintf("| %%%ds ", colWidthName), "Name")
+		fmt.Printf(fmt.Sprintf("| %%%ds ", colWidthType), "Type")
+		fmt.Printf("\n")
+
+		// Print header delimeter
+		fmt.Printf(fmt.Sprintf("+%%%ds", colWidthName), strings.Repeat("-", colWidthName+2))
+		fmt.Printf(fmt.Sprintf("+%%%ds", colWidthType), strings.Repeat("-", colWidthType+2))
+		fmt.Printf("\n")
+
+		for colName, colType := range colsData {
+			fmt.Printf(fmt.Sprintf("| %%%ds ", -colWidthName), colName)
+			fmt.Printf(fmt.Sprintf("| %%%ds ", -colWidthType), colType)
+			fmt.Printf("\n")
+		}
+
 		return nil
 	}
 
@@ -378,11 +439,17 @@ func listTables(cks *cqlKeyspaceSession) func(string) []string {
 	}
 }
 
-func listColumns(cks *cqlKeyspaceSession) func(string) []string {
+func listColumns(cks *cqlKeyspaceSession, prefix string) func(string) []string {
 	return func(line string) []string {
 		// get table from the line and fetch the columns
-		tables, _ := cks.FetchTables()
-		return tables
+		tableName := strings.TrimPrefix(line, prefix)
+		tableName = strings.Fields(tableName)[0]
+		columns, _ := cks.FetchColumns(tableName)
+		cols := make([]string, 0)
+		for col, _ := range columns {
+			cols = append(cols, col)
+		}
+		return cols
 	}
 }
 
@@ -407,7 +474,7 @@ func runInteractiveSession(cks *cqlKeyspaceSession) error {
 			readline.PcItem("from",
 				readline.PcItemDynamic(listTables(cks),
 					readline.PcItem(";"),
-					readline.PcItemDynamic(listColumns(cks),
+					readline.PcItemDynamic(listColumns(cks, "delete from"),
 						readline.PcItem("="),
 					),
 				),
@@ -416,7 +483,7 @@ func runInteractiveSession(cks *cqlKeyspaceSession) error {
 		readline.PcItem("update",
 			readline.PcItemDynamic(listTables(cks),
 				readline.PcItem("set",
-					readline.PcItemDynamic(listColumns(cks),
+					readline.PcItemDynamic(listColumns(cks, "update"),
 						readline.PcItem("="),
 					),
 				),
