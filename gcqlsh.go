@@ -402,7 +402,11 @@ func processScriptFile(scriptFile string, cks *cqlKeyspaceSession, printCQL bool
 	}
 
 	r := bufio.NewReader(file)
-	for cql, e := r.ReadString(";"[0]); e == nil; {
+	for {
+		cql, e := r.ReadString(';')
+		if e != nil {
+			break
+		}
 		breakLoop, continueLoop, closeFunc, err := processCommand(cql, cks)
 		defer closeFunc()
 		if printCQL {
@@ -421,7 +425,6 @@ func processScriptFile(scriptFile string, cks *cqlKeyspaceSession, printCQL bool
 		if err != nil && failOnError {
 			os.Exit(-1)
 		}
-		cql, e = r.ReadString(";"[0])
 	}
 }
 
