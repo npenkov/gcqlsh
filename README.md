@@ -21,9 +21,7 @@ Building
 ----
 
 ``` 
-go get github.com/npenkov/gcqlsh
-
-go build -o gocqlsh src/github.com/npenkov/gcqlsh/gcqlsh.go
+go build -o gocqlsh src/github.com/npenkov/gcqlsh/cmd/gcqlsh.go
 ```
 
 Fatures
@@ -85,3 +83,11 @@ Package dependencies
 ----
 
 Written with [vim-go](https://github.com/fatih/vim-go)
+
+License
+-------
+
+> Copyright (c) 2016-2019 Nick Penkov. All rights reserved.
+> Use of this source code is governed by a MIT-style
+> license that can be found in the LICENSE file.
+
