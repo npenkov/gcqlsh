@@ -12,6 +12,8 @@ import (
 	r "github.com/npenkov/gcqlsh/internal/runtime"
 )
 
+var version string
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -22,6 +24,7 @@ func main() {
 	var printCQL bool
 	var failOnError bool
 	var noColor bool
+	var showVersion bool
 	var scriptFile string
 
 	flag.StringVar(&host, "host", "127.0.0.1", "Cassandra host to connect to")
@@ -32,6 +35,7 @@ func main() {
 	flag.BoolVar(&noColor, "no-color", false, "Console without colors")
 	flag.StringVar(&keyspace, "k", "system", "Default keyspace to connect to")
 	flag.StringVar(&scriptFile, "f", "", "Execute file containing cql statements instead of having interacive session")
+	flag.BoolVar(&showVersion, "v", false, "Version information")
 
 	flag.Parse()
 
@@ -39,6 +43,11 @@ func main() {
 		fmt.Fprintf(os.Stdout, "Usage of %s:\n", os.Args[0])
 		fmt.Fprintf(os.Stdout, "%s [options] CQL_SCRIPT_FILE\n", os.Args[0])
 		flag.PrintDefaults()
+	}
+
+	if showVersion {
+		fmt.Println(version)
+		os.Exit(0)
 	}
 
 	color.NoColor = noColor
