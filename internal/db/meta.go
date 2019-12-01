@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/gocql/gocql"
@@ -45,7 +44,7 @@ func (cks *CQLKeyspaceSession) FetchTables() ([]string, error) {
 	tables := make([]string, 0)
 
 	if schema, err := cks.Session.KeyspaceMetadata(cks.ActiveKeyspace); err == nil {
-		for table, _ := range schema.Tables {
+		for table := range schema.Tables {
 			tables = append(tables, table)
 		}
 	}
@@ -61,7 +60,7 @@ func (cks *CQLKeyspaceSession) FetchColumns(tableName string) (map[string]*gocql
 
 	tm, ok := schema.Tables[tableName]
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Table %s not in schema", tableName))
+		return nil, fmt.Errorf("Table %s not in schema", tableName)
 	}
 
 	return tm.Columns, nil

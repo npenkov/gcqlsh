@@ -6,7 +6,7 @@ import (
 	"github.com/gocql/gocql"
 )
 
-func printVal(col gocql.ColumnInfo, value interface{}) string {
+func printRowValue(col gocql.ColumnInfo, value interface{}) string {
 	typeMod := "s"
 	t := col.TypeInfo.Type()
 	switch t {

@@ -6,7 +6,7 @@ import (
 	"github.com/gocql/gocql"
 )
 
-func CreateCluster(host string, port int, keyspace string) *gocql.ClusterConfig {
+func createCluster(host string, port int, keyspace string) *gocql.ClusterConfig {
 	cluster := gocql.NewCluster(gocql.JoinHostPort(host, port))
 
 	cluster.Keyspace = keyspace
@@ -22,9 +22,13 @@ func CreateCluster(host string, port int, keyspace string) *gocql.ClusterConfig 
 	return cluster
 }
 
-func CreateSession(cluster *gocql.ClusterConfig) (*gocql.Session, func(), error) {
+func createSession(cluster *gocql.ClusterConfig) (*gocql.Session, func(), error) {
 	session, err := cluster.CreateSession()
 	return session, func() {
 		session.Close()
 	}, err
+}
+
+func NewSession(host string, port int, keyspace string) (*gocql.Session, func(), error) {
+	return createSession(createCluster(host, port, keyspace))
 }

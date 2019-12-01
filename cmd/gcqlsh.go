@@ -44,7 +44,7 @@ func main() {
 	color.NoColor = noColor
 
 	// connect to the cluster
-	session, closeFunc, sesErr := db.CreateSession(db.CreateCluster(host, port, keyspace))
+	session, closeFunc, sesErr := db.NewSession(host, port, keyspace)
 	if sesErr != nil {
 		fmt.Println(sesErr)
 		os.Exit(-1)
@@ -55,7 +55,10 @@ func main() {
 		Session: session, ActiveKeyspace: keyspace, Host: host, Port: port}
 
 	if scriptFile == "" {
-		r.RunInteractiveSession(keyspaceSession)
+		if err := r.RunInteractiveSession(keyspaceSession); err != nil {
+			fmt.Println(err)
+			os.Exit(-1)
+		}
 	} else {
 		color.NoColor = true
 		r.ProcessScriptFile(scriptFile, keyspaceSession, printCQL, failOnError)

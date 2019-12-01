@@ -37,7 +37,7 @@ func ProcessCommand(cql string, cks *db.CQLKeyspaceSession) (breakLoop bool, con
 
 		scriptKeyspace = strings.TrimSpace(scriptKeyspace)
 		// Create new session as gocql does not support changing keyspaces in session
-		s, closef, err := db.CreateSession(db.CreateCluster(cks.Host, cks.Port, scriptKeyspace))
+		s, closef, err := db.NewSession(cks.Host, cks.Port, scriptKeyspace)
 		if err == nil {
 			cks.Session = s
 			cks.ActiveKeyspace = scriptKeyspace
@@ -72,7 +72,7 @@ func execSelectCQL(s *gocql.Session, cql string) error {
 		for colIdx := range iter.Columns() {
 			col := iter.Columns()[colIdx]
 			value := res[col.Name]
-			row[col.Name] = printVal(col, value)
+			row[col.Name] = printRowValue(col, value)
 			if len(row[col.Name]) > cellWidths[col.Name] {
 				cellWidths[col.Name] = len(row[col.Name])
 			}

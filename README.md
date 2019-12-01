@@ -26,23 +26,35 @@ go build -o gocqlsh src/github.com/npenkov/gcqlsh/cmd/gcqlsh.go
 
 Fatures
 ----
- * Running script files from command line
+ * Running DDL script files from command line
  * Support for Cassandra 2.1+/ScyllaDB
  * CQL Support
  * `desc` command with
-   * `keyspaces`
-   * `keyspace`
-   * `tables`
+   * `keyspaces` - simple list
+   * `tables` - simple list
+   * `table` - simple list of columns and types
  * Auto completition for commands:
-   * `use`
-   * `desc`
-   * `select`
-   * `update`
-   * `delete`
-   * `insert`
+   * `use` - keyspaces
+   * `desc` - tables
+   * `select` - tables
+   * `update` - tables and columns
+   * `delete` - tables
+   * `insert` - tables
+
+Still missing
+----
+
+ * Paging in interactive results
+ * DDL Statements when describing Keyspaces and tables
+ * Tracing of statements
+ * Expanded rows
+ * Code assistance for different keyspaces
+ * Security when connecting to nodes
+ * Node token awareness
 
 Command line help
 ----
+
 ```
 gcqlsh -h
 Usage of gcqlsh:
