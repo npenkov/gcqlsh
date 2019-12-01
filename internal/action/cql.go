@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fatih/color"
-	"github.com/gocql/gocql"
+	"github.com/npenkov/gcqlsh/internal/output"
+
 	"github.com/npenkov/gcqlsh/internal/db"
 )
 
-func ProcessCommand(cql string, cks *db.CQLKeyspaceSession) (breakLoop bool, continueLoop bool, closeFunc func(), errRet error) {
+func ProcessCommand(cql string, cks *db.CQLKeyspaceSession) (breakLoop bool, continueLoop bool, errRet error) {
 	breakLoop = false
 	continueLoop = false
 	errRet = nil
-	closeFunc = func() {}
 
 	cql = strings.TrimSpace(cql)
 
@@ -39,9 +38,12 @@ func ProcessCommand(cql string, cks *db.CQLKeyspaceSession) (breakLoop bool, con
 		// Create new session as gocql does not support changing keyspaces in session
 		s, closef, err := db.NewSession(cks.Host, cks.Port, scriptKeyspace)
 		if err == nil {
+			if cks.CloseSessionFunc != nil {
+				cks.CloseSessionFunc()
+			}
 			cks.Session = s
 			cks.ActiveKeyspace = scriptKeyspace
-			closeFunc = closef
+			cks.CloseSessionFunc = closef
 		}
 		continueLoop = true
 		return
@@ -51,12 +53,20 @@ func ProcessCommand(cql string, cks *db.CQLKeyspaceSession) (breakLoop bool, con
 		errRet = describeCmd(cks, cql)
 		return
 	}
-	errRet = execCQL(cks.Session, cql)
+
+	if strings.HasPrefix(cql, "tracing ") || strings.HasPrefix(cql, "TRACING ") {
+		errRet = tracingCmd(cks, cql)
+		return
+	}
+	errRet = execCQL(cks, cql)
 	return
 }
 
-func execSelectCQL(s *gocql.Session, cql string) error {
-	iter := s.Query(cql).Iter()
+func execSelectCQL(cks *db.CQLKeyspaceSession, cql string) error {
+	tracer := NewTracer(cks)
+	defer tracer.Close()
+	qry := tracer.Query(cql)
+	iter := qry.Iter()
 
 	cntCols := len(iter.Columns())
 	cellWidths := make(map[string]int, cntCols)
@@ -86,40 +96,29 @@ func execSelectCQL(s *gocql.Session, cql string) error {
 		return err
 	}
 
-	// Print header
-	red := color.New(color.FgRed).SprintFunc()
-	magenta := color.New(color.FgMagenta).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	blue := color.New(color.FgBlue).SprintFunc()
-
-	var addSpaceColor = 0
-	if !color.NoColor {
-		addSpaceColor = 9
-	}
-
 	for colIdx := range iter.Columns() {
 		col := iter.Columns()[colIdx]
 		if len(col.Name) > cellWidths[col.Name] {
 			cellWidths[col.Name] = len(col.Name)
 		}
-		var colName string
-		if db.IsPartitionKeyColumn(col, s) {
-			colName = red(col.Name)
-		} else if db.IsClusterKeyColumn(col, s) {
-			colName = blue(col.Name)
+		var color func(a ...interface{}) string
+		if db.IsPartitionKeyColumn(col, cks.Session) {
+			color = output.Red
+		} else if db.IsClusterKeyColumn(col, cks.Session) {
+			color = output.Blue
 		} else {
-			colName = magenta(col.Name)
+			color = output.Magenta
 		}
 
-		fmt.Printf(fmt.Sprintf("| %%%ds ", cellWidths[col.Name]+addSpaceColor), colName)
+		output.PrintColoredColumnVal(cellWidths[col.Name], col.Name, color)
 	}
 	fmt.Printf("\n")
 
 	// Print header delimeter
 	for colIdx := range iter.Columns() {
 		col := iter.Columns()[colIdx]
-		fmt.Printf(fmt.Sprintf("+%%%ds", cellWidths[col.Name]+2), strings.Repeat("-", cellWidths[col.Name]+2))
+		//output.PrintColumnVal(cellWidths[col.Name]+2, strings.Repeat("-", cellWidths[col.Name]+2))
+		output.PrintHeaderSeparator(cellWidths[col.Name])
 	}
 	fmt.Printf("\n")
 
@@ -129,14 +128,13 @@ func execSelectCQL(s *gocql.Session, cql string) error {
 		for colIdx := range iter.Columns() {
 			col := iter.Columns()[colIdx]
 
-			var valueStr string
-			width := cellWidths[col.Name] + addSpaceColor
+			var color func(a ...interface{}) string
 			if db.IsStringColumn(col) {
-				valueStr = yellow(row[col.Name])
+				color = output.Yellow
 			} else {
-				valueStr = green(row[col.Name])
+				color = output.Green
 			}
-			fmt.Printf(fmt.Sprintf("| %%%ds ", width), valueStr)
+			output.PrintColoredColumnVal(cellWidths[col.Name], row[col.Name], color)
 		}
 		fmt.Printf("\n")
 	}
@@ -145,14 +143,17 @@ func execSelectCQL(s *gocql.Session, cql string) error {
 	} else {
 		fmt.Printf("\n (%d rows)\n", len(rows))
 	}
+
 	return nil
 }
 
-func execCQL(s *gocql.Session, cql string) error {
+func execCQL(cks *db.CQLKeyspaceSession, cql string) error {
 	if strings.HasPrefix(cql, "select") || strings.HasPrefix(cql, "SELECT") {
-		return execSelectCQL(s, cql)
+		return execSelectCQL(cks, cql)
 	} else {
-		if err := s.Query(cql).RetryPolicy(nil).Exec(); err != nil {
+		tracer := NewTracer(cks)
+		defer tracer.Close()
+		if err := tracer.Query(cql).RetryPolicy(nil).Exec(); err != nil {
 			fmt.Printf("error executing cql cql=%q err=%v\n", cql, err)
 			return err
 		}

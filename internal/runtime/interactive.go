@@ -67,6 +67,14 @@ func RunInteractiveSession(cks *db.CQLKeyspaceSession) error {
 				),
 			),
 		),
+		readline.PcItem("tracing",
+			readline.PcItem("on",
+				readline.PcItem(";"),
+			),
+			readline.PcItem("off",
+				readline.PcItem(";"),
+			),
+		),
 	)
 	home := os.Getenv("HOME")
 	config := &readline.Config{
@@ -101,8 +109,7 @@ func RunInteractiveSession(cks *db.CQLKeyspaceSession) error {
 		}
 		cmd := strings.Join(cmds, " ")
 		cmds = cmds[:0]
-		breakLoop, _, closeFunction, err := action.ProcessCommand(cmd, cks)
-		defer closeFunction()
+		breakLoop, _, err := action.ProcessCommand(cmd, cks)
 
 		if err != nil {
 			fmt.Println(err)

@@ -49,10 +49,13 @@ func main() {
 		fmt.Println(sesErr)
 		os.Exit(-1)
 	}
-	defer closeFunc()
 
 	keyspaceSession := &db.CQLKeyspaceSession{
-		Session: session, ActiveKeyspace: keyspace, Host: host, Port: port}
+		Session: session, ActiveKeyspace: keyspace, Host: host, Port: port, CloseSessionFunc: closeFunc}
+
+	defer func() {
+		keyspaceSession.CloseSessionFunc()
+	}()
 
 	if scriptFile == "" {
 		if err := r.RunInteractiveSession(keyspaceSession); err != nil {

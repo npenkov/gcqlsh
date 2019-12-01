@@ -32,3 +32,7 @@ func createSession(cluster *gocql.ClusterConfig) (*gocql.Session, func(), error)
 func NewSession(host string, port int, keyspace string) (*gocql.Session, func(), error) {
 	return createSession(createCluster(host, port, keyspace))
 }
+
+func (cks *CQLKeyspaceSession) CloneSession() (*gocql.Session, func(), error) {
+	return createSession(createCluster(cks.Host, cks.Port, cks.ActiveKeyspace))
+}

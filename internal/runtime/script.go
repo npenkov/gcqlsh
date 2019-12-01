@@ -22,8 +22,7 @@ func ProcessScriptFile(scriptFile string, cks *db.CQLKeyspaceSession, printCQL b
 		if e != nil {
 			break
 		}
-		breakLoop, continueLoop, closeFunc, err := action.ProcessCommand(cql, cks)
-		defer closeFunc()
+		breakLoop, continueLoop, err := action.ProcessCommand(cql, cks)
 		if printCQL {
 			fmt.Println(cql)
 		}

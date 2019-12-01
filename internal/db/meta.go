@@ -7,12 +7,22 @@ import (
 )
 
 type CQLKeyspaceSession struct {
-	Host           string
-	Port           int
-	Session        *gocql.Session
-	ActiveKeyspace string
-	NewSchema      bool
-	IsInitialized  bool
+	Host             string
+	Port             int
+	Session          *gocql.Session
+	ActiveKeyspace   string
+	NewSchema        bool
+	IsInitialized    bool
+	CloseSessionFunc func()
+	TracingEnabled   bool
+}
+
+func (cks *CQLKeyspaceSession) EnableTracing() {
+	cks.TracingEnabled = true
+}
+
+func (cks *CQLKeyspaceSession) DisableTracing() {
+	cks.TracingEnabled = false
 }
 
 // FetchKeyspaces obtains the list of all keyspaces available

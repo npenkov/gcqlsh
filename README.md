@@ -4,7 +4,6 @@ Cassandra command line shell written in Golang
 
 ![](screenshots/gcqlsh_rec.gif?raw=true)
 
-
 Motivation
 ----
 
@@ -29,6 +28,7 @@ Fatures
  * Running DDL script files from command line
  * Support for Cassandra 2.1+/ScyllaDB
  * CQL Support
+ * Statement tracing
  * `desc` command with
    * `keyspaces` - simple list
    * `tables` - simple list
@@ -46,7 +46,6 @@ Still missing
 
  * Paging in interactive results
  * DDL Statements when describing Keyspaces and tables
- * Tracing of statements
  * Expanded rows
  * Code assistance for different keyspaces
  * Security when connecting to nodes
