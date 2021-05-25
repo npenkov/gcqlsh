@@ -9,6 +9,8 @@ import (
 type CQLKeyspaceSession struct {
 	Host             string
 	Port             int
+	Username         string
+	Password         string
 	Session          *gocql.Session
 	ActiveKeyspace   string
 	NewSchema        bool

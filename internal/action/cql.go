@@ -36,7 +36,7 @@ func ProcessCommand(cql string, cks *db.CQLKeyspaceSession) (breakLoop bool, con
 
 		scriptKeyspace = strings.TrimSpace(scriptKeyspace)
 		// Create new session as gocql does not support changing keyspaces in session
-		s, closef, err := db.NewSession(cks.Host, cks.Port, scriptKeyspace)
+		s, closef, err := db.NewSession(cks.Host, cks.Port, cks.Username, cks.Password, scriptKeyspace)
 		if err == nil {
 			if cks.CloseSessionFunc != nil {
 				cks.CloseSessionFunc()

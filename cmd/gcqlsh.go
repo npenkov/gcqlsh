@@ -19,6 +19,8 @@ func main() {
 
 	var host string
 	var port int
+	var username string
+	var password string
 	var keyspace string
 	var printConf bool
 	var printCQL bool
@@ -29,6 +31,8 @@ func main() {
 
 	flag.StringVar(&host, "host", "127.0.0.1", "Cassandra host to connect to")
 	flag.IntVar(&port, "port", 9042, "Cassandra RPC port")
+	flag.StringVar(&username, "username", "", "Username used for the connection")
+	flag.StringVar(&password, "password", "", "Password used for the connection")
 	flag.BoolVar(&printConf, "print-confirmation", false, "Print 'ok' on successfuly executed cql statement from the file")
 	flag.BoolVar(&printCQL, "print-cql", false, "Print Statements that are executed from a file")
 	flag.BoolVar(&failOnError, "fail-on-error", false, "Stop execution if statement from file fails.")
@@ -53,7 +57,7 @@ func main() {
 	color.NoColor = noColor
 
 	// connect to the cluster
-	session, closeFunc, sesErr := db.NewSession(host, port, keyspace)
+	session, closeFunc, sesErr := db.NewSession(host, port, username, password, keyspace)
 	if sesErr != nil {
 		fmt.Println(sesErr)
 		os.Exit(-1)

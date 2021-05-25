@@ -48,7 +48,6 @@ Still missing
  * DDL Statements when describing Keyspaces and tables
  * Expanded rows
  * Code assistance for different keyspaces
- * Security when connecting to nodes
  * Node token awareness
 
 Command line help
@@ -67,12 +66,17 @@ Usage of gcqlsh:
         Default keyspace to connect to (default "system")
   -no-color
         Console without colors
+  -password string
+        Password used for the connection
   -port int
         Cassandra RPC port (default 9042)
   -print-confirmation
         Print 'ok' on successfuly executed cql statement from the file
   -print-cql
         Print Statements that are executed from a file
+  -username string
+        Username used for the connection
+  -v    Version information
 ```
 
 Planned features

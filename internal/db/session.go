@@ -6,8 +6,15 @@ import (
 	"github.com/gocql/gocql"
 )
 
-func createCluster(host string, port int, keyspace string) *gocql.ClusterConfig {
+func createCluster(host string, port int, username string, password string, keyspace string) *gocql.ClusterConfig {
 	cluster := gocql.NewCluster(gocql.JoinHostPort(host, port))
+
+	if username != "" && password != "" {
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: username,
+			Password: password,
+		}
+	}
 
 	cluster.Keyspace = keyspace
 	cluster.Consistency = gocql.One
@@ -29,10 +36,10 @@ func createSession(cluster *gocql.ClusterConfig) (*gocql.Session, func(), error)
 	}, err
 }
 
-func NewSession(host string, port int, keyspace string) (*gocql.Session, func(), error) {
-	return createSession(createCluster(host, port, keyspace))
+func NewSession(host string, port int, username string, password string, keyspace string) (*gocql.Session, func(), error) {
+	return createSession(createCluster(host, port, username, password, keyspace))
 }
 
 func (cks *CQLKeyspaceSession) CloneSession() (*gocql.Session, func(), error) {
-	return createSession(createCluster(cks.Host, cks.Port, cks.ActiveKeyspace))
+	return createSession(createCluster(cks.Host, cks.Port, cks.Username, cks.Password, cks.ActiveKeyspace))
 }
