@@ -8,6 +8,7 @@ require (
 	github.com/chzyer/readline v1.5.1
 	github.com/fatih/color v1.18.0
 	github.com/gocql/gocql v1.7.0
+	github.com/ory/dockertest/v3 v3.12.0
 )
 
 require (
@@ -18,7 +19,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/docker/cli v27.4.1+incompatible // indirect
-	github.com/docker/docker v27.1.1+incompatible // indirect
+	github.com/docker/docker v28.0.0+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
@@ -34,7 +35,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runc v1.2.3 // indirect
-	github.com/ory/dockertest/v3 v3.12.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
