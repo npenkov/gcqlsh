@@ -69,6 +69,20 @@ make test-docker-compose
 ```
 This starts a Cassandra container via docker-compose and runs tests against it. This avoids the port mapping issues that occur on macOS with dockertest.
 
+#### Run Tests with Clean Rebuild (After Code Changes)
+```bash
+make test-docker-compose-clean
+```
+**Use this after pulling new code changes or if you see stale code errors.** This forces a complete rebuild without Docker cache. Docker caches layers, so sometimes old code runs even after `git pull`. This target:
+- Stops and removes all containers and volumes
+- Rebuilds images without cache (`--no-cache`)
+- Runs tests with fresh code
+
+**When to use:**
+- After `git pull` or switching branches
+- When tests fail with errors that don't match the current code
+- When you see outdated schema errors (like "DECIMAL" errors after it's been changed to "DOUBLE")
+
 #### Run Tests Locally
 ```bash
 make test-local
@@ -211,6 +225,40 @@ If port 9042 is already in use:
 - The docker-compose setup exposes 9042, so stop any running Cassandra instances
 - Check for other Cassandra instances: `docker ps`
 - Stop conflicting containers: `docker stop <container-id>`
+
+### Docker Cache Issues (Stale Code)
+
+If you see errors that don't match the current code, like:
+```
+can not marshal float64 into decimal
+```
+when the schema has been changed to use `DOUBLE` instead of `DECIMAL`, this is a **Docker cache issue**.
+
+**Solution:** Run with clean rebuild:
+```bash
+make test-docker-compose-clean
+```
+
+**Why does this happen?**
+- Docker caches image layers for faster builds
+- After `git pull`, Docker may use cached layers with old code
+- The `--build` flag only rebuilds changed layers
+- The `--no-cache` flag forces a complete rebuild
+
+**Quick fix alternatives:**
+```bash
+# Option 1: Use the clean target
+make test-docker-compose-clean
+
+# Option 2: Manual cleanup
+docker-compose -f docker-compose.test.yml down -v
+docker-compose -f docker-compose.test.yml build --no-cache
+docker-compose -f docker-compose.test.yml up --build
+
+# Option 3: Remove all test images
+docker rmi $(docker images | grep gcqlsh-test | awk '{print $3}')
+make test
+```
 
 ### Cassandra Configuration Errors
 If you see errors like:

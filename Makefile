@@ -10,7 +10,7 @@ DARWIN=$(EXECUTABLE)_darwin_amd64
 
 VERSION=$(shell cat VERSION)
 
-.PHONY: all clean distr test test-local test-docker test-docker-compose test-coverage
+.PHONY: all clean distr test test-local test-docker test-docker-compose test-docker-compose-clean test-coverage
 
 all: clean build ## Build and run tests
 
@@ -65,6 +65,13 @@ test-docker: ## Run tests in Docker container with Docker socket mount
 test-docker-compose: ## Run tests using docker-compose (best for macOS, handles networking)
 	@echo "Running tests using docker-compose..."
 	docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from test-runner
+	docker-compose -f docker-compose.test.yml down -v
+
+test-docker-compose-clean: ## Run tests with clean rebuild (no cache, use after code changes)
+	@echo "Cleaning and rebuilding test infrastructure..."
+	docker-compose -f docker-compose.test.yml down -v
+	docker-compose -f docker-compose.test.yml build --no-cache
+	docker-compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test-runner
 	docker-compose -f docker-compose.test.yml down -v
 
 test-coverage: ## Run tests with coverage report
