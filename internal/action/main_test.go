@@ -239,7 +239,7 @@ func setupTestSchema(hostPort string) error {
 		CREATE TABLE IF NOT EXISTS products (
 			id UUID PRIMARY KEY,
 			name TEXT,
-			price DECIMAL,
+			price DOUBLE,
 			stock INT
 		)
 	`).Exec(); err != nil {

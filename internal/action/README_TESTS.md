@@ -140,7 +140,7 @@ CREATE TABLE users (
 CREATE TABLE products (
     id UUID PRIMARY KEY,
     name TEXT,
-    price DECIMAL,
+    price DOUBLE,
     stock INT
 )
 ```
