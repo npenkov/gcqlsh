@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  cassandra:
+    image: cassandra:4.1
+    container_name: gcqlsh-test-cassandra
+    environment:
+      - CASSANDRA_BROADCAST_ADDRESS=cassandra
+      - CASSANDRA_LISTEN_ADDRESS=0.0.0.0
+      - CASSANDRA_CLUSTER_NAME=TestCluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    ports:
+      - "9042:9042"
+    networks:
+      - gcqlsh-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: gcqlsh-test-runner
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    environment:
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - GO_TEST_TIMEOUT=15m
+    networks:
+      - gcqlsh-test-network
+    volumes:
+      # Mount go cache for faster builds
+      - go-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+networks:
+  gcqlsh-test-network:
+    driver: bridge
+
+volumes:
+  go-cache:
+  go-build-cache:

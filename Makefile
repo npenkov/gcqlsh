@@ -10,7 +10,7 @@ DARWIN=$(EXECUTABLE)_darwin_amd64
 
 VERSION=$(shell cat VERSION)
 
-.PHONY: all clean distr
+.PHONY: all clean distr test test-local test-docker test-docker-compose test-coverage
 
 all: clean build ## Build and run tests
 
@@ -46,6 +46,32 @@ $(DARWIN):
 
 clean: ## Remove previous build
 	rm -f $(DARWIN_ZIP) $(DARWIN) $(LINUX_ZIP) $(LINUX) $(WINDOWS_ZIP) $(WINDOWS)
+
+test: test-docker-compose ## Run tests (recommended for all platforms, especially macOS)
+
+test-local: ## Run tests locally (requires Docker, may fail on macOS)
+	@echo "Running tests locally..."
+	@echo "Note: If tests fail on macOS with connection errors, use 'make test-docker-compose' instead"
+	go test -v ./internal/action/... -timeout 15m
+
+test-docker: ## Run tests in Docker container with Docker socket mount
+	@echo "Building test Docker image..."
+	docker build -f Dockerfile.test -t gcqlsh-test .
+	@echo "Running tests in Docker..."
+	docker run --rm \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		gcqlsh-test
+
+test-docker-compose: ## Run tests using docker-compose (best for macOS, handles networking)
+	@echo "Running tests using docker-compose..."
+	docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit --exit-code-from test-runner
+	docker-compose -f docker-compose.test.yml down -v
+
+test-coverage: ## Run tests with coverage report
+	@echo "Running tests with coverage..."
+	go test -v -cover -coverprofile=coverage.out ./internal/action/... -timeout 15m
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
 
 help: ## Display available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

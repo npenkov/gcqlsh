@@ -25,84 +25,136 @@ var (
 // TestMain acts as the test suite entry point
 func TestMain(m *testing.M) {
 	var err error
+	var hostPort string
 
-	// Create dockertest pool
-	cassandraPool, err = dockertest.NewPool("")
-	if err != nil {
-		log.Printf("Could not construct pool: %s. Tests will be skipped.", err)
-		dockerAvailable = false
-		os.Exit(0)
-	}
+	// Check if we're running in docker-compose mode
+	cassandraHostEnv := os.Getenv("CASSANDRA_HOST")
+	cassandraPortEnv := os.Getenv("CASSANDRA_PORT")
 
-	err = cassandraPool.Client.Ping()
-	if err != nil {
-		log.Printf("Could not connect to Docker: %s. Tests will be skipped.", err)
-		dockerAvailable = false
-		os.Exit(0)
-	}
+	if cassandraHostEnv != "" {
+		// Running in docker-compose mode - use existing Cassandra service
+		log.Printf("Running in docker-compose mode, connecting to Cassandra at %s:%s", cassandraHostEnv, cassandraPortEnv)
+		dockerAvailable = true
+		cassandraHost = cassandraHostEnv
+		cassandraPort = 9042
 
-	dockerAvailable = true
+		if cassandraPortEnv != "" {
+			hostPort = fmt.Sprintf("%s:%s", cassandraHostEnv, cassandraPortEnv)
+		} else {
+			hostPort = fmt.Sprintf("%s:9042", cassandraHostEnv)
+		}
 
-	// Pull and start Cassandra container
-	cassandraResource, err = cassandraPool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "cassandra",
-		Tag:        "4.1",
-		Env: []string{
-			"CASSANDRA_BROADCAST_ADDRESS=127.0.0.1",
-			"CASSANDRA_LISTEN_ADDRESS=0.0.0.0",
-		},
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{Name: "no"}
-	})
-	if err != nil {
-		log.Fatalf("Could not start Cassandra resource: %s", err)
-	}
+		// Wait for Cassandra to be ready with retries
+		log.Printf("Waiting for Cassandra to be ready...")
+		maxRetries := 30
+		for i := 0; i < maxRetries; i++ {
+			cluster := gocql.NewCluster(hostPort)
+			cluster.Consistency = gocql.One
+			cluster.Timeout = 10 * time.Second
+			cluster.ProtoVersion = 3
+			cluster.IgnorePeerAddr = true
+			cluster.DisableInitialHostLookup = true
 
-	// Set expiration for the container to 10 minutes
-	if err := cassandraResource.Expire(600); err != nil {
-		log.Fatalf("Could not set expiration: %s", err)
-	}
+			session, err := cluster.CreateSession()
+			if err != nil {
+				log.Printf("Attempt %d/%d: Cassandra not ready yet: %v", i+1, maxRetries, err)
+				time.Sleep(2 * time.Second)
+				continue
+			}
 
-	cassandraHost = "localhost"
-	cassandraPort = 9042
+			// Try a simple query to ensure Cassandra is ready
+			if err := session.Query("SELECT now() FROM system.local").Exec(); err != nil {
+				session.Close()
+				log.Printf("Attempt %d/%d: Cassandra query failed: %v", i+1, maxRetries, err)
+				time.Sleep(2 * time.Second)
+				continue
+			}
+			session.Close()
+			log.Printf("Cassandra is ready!")
+			break
+		}
+	} else {
+		// Running in local mode - use dockertest to spin up Cassandra
+		log.Printf("Running in local mode with dockertest")
 
-	// Get the actual port that Docker assigned
-	hostPort := cassandraResource.GetPort("9042/tcp")
-	fmt.Printf("Cassandra container started on port %s\n", hostPort)
-
-	// Wait for Cassandra to be ready
-	if err := cassandraPool.Retry(func() error {
-		cluster := gocql.NewCluster(cassandraResource.GetHostPort("9042/tcp"))
-		cluster.Consistency = gocql.One
-		cluster.Timeout = 10 * time.Second
-		cluster.ProtoVersion = 3
-		cluster.IgnorePeerAddr = true
-		cluster.DisableInitialHostLookup = true
-
-		session, err := cluster.CreateSession()
+		// Create dockertest pool
+		cassandraPool, err = dockertest.NewPool("")
 		if err != nil {
-			return err
-		}
-		defer session.Close()
-
-		// Try a simple query to ensure Cassandra is ready
-		if err := session.Query("SELECT now() FROM system.local").Exec(); err != nil {
-			return err
+			log.Printf("Could not construct pool: %s. Tests will be skipped.", err)
+			dockerAvailable = false
+			os.Exit(0)
 		}
 
-		return nil
-	}); err != nil {
-		log.Fatalf("Could not connect to Cassandra: %s", err)
+		err = cassandraPool.Client.Ping()
+		if err != nil {
+			log.Printf("Could not connect to Docker: %s. Tests will be skipped.", err)
+			dockerAvailable = false
+			os.Exit(0)
+		}
+
+		dockerAvailable = true
+
+		// Pull and start Cassandra container
+		cassandraResource, err = cassandraPool.RunWithOptions(&dockertest.RunOptions{
+			Repository: "cassandra",
+			Tag:        "4.1",
+			Env: []string{
+				"CASSANDRA_BROADCAST_ADDRESS=127.0.0.1",
+				"CASSANDRA_LISTEN_ADDRESS=0.0.0.0",
+			},
+		}, func(config *docker.HostConfig) {
+			config.AutoRemove = true
+			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+		})
+		if err != nil {
+			log.Fatalf("Could not start Cassandra resource: %s", err)
+		}
+
+		// Set expiration for the container to 10 minutes
+		if err := cassandraResource.Expire(600); err != nil {
+			log.Fatalf("Could not set expiration: %s", err)
+		}
+
+		cassandraHost = "localhost"
+		cassandraPort = 9042
+
+		// Get the actual port that Docker assigned
+		hostPort = cassandraResource.GetHostPort("9042/tcp")
+		fmt.Printf("Cassandra container started on port %s\n", hostPort)
+
+		// Wait for Cassandra to be ready
+		if err := cassandraPool.Retry(func() error {
+			cluster := gocql.NewCluster(hostPort)
+			cluster.Consistency = gocql.One
+			cluster.Timeout = 10 * time.Second
+			cluster.ProtoVersion = 3
+			cluster.IgnorePeerAddr = true
+			cluster.DisableInitialHostLookup = true
+
+			session, err := cluster.CreateSession()
+			if err != nil {
+				return err
+			}
+			defer session.Close()
+
+			// Try a simple query to ensure Cassandra is ready
+			if err := session.Query("SELECT now() FROM system.local").Exec(); err != nil {
+				return err
+			}
+
+			return nil
+		}); err != nil {
+			log.Fatalf("Could not connect to Cassandra: %s", err)
+		}
 	}
 
 	// Setup test keyspace and tables
-	if err := setupTestSchema(cassandraResource.GetHostPort("9042/tcp")); err != nil {
+	if err := setupTestSchema(hostPort); err != nil {
 		log.Fatalf("Could not setup test schema: %s", err)
 	}
 
 	// Create test session
-	session, closeFunc, err := db.NewSession(cassandraResource.GetHostPort("9042/tcp"), 0, "", "", "test_keyspace")
+	session, closeFunc, err := db.NewSession(hostPort, 0, "", "", "test_keyspace")
 	if err != nil {
 		log.Fatalf("Could not create test session: %s", err)
 	}
@@ -128,8 +180,11 @@ func TestMain(m *testing.M) {
 		testSession.CloseSessionFunc()
 	}
 
-	if err := cassandraPool.Purge(cassandraResource); err != nil {
-		log.Fatalf("Could not purge Cassandra resource: %s", err)
+	// Only purge if we created the container (local mode)
+	if cassandraResource != nil && cassandraPool != nil {
+		if err := cassandraPool.Purge(cassandraResource); err != nil {
+			log.Fatalf("Could not purge Cassandra resource: %s", err)
+		}
 	}
 
 	os.Exit(code)

@@ -15,7 +15,12 @@ The tests are designed to verify the functionality of all public methods in the 
 
 ### Docker-based Testing
 
-The tests use `ory/dockertest` to run a Cassandra container for integration testing. This ensures that:
+The tests support two modes of operation:
+
+1. **Local Mode** (using dockertest): Tests spin up their own Cassandra container using `ory/dockertest`
+2. **Docker Compose Mode** (recommended for macOS): Tests connect to a Cassandra service managed by docker-compose
+
+Both modes ensure that:
 1. Tests run against a real Cassandra instance
 2. Tests are isolated and repeatable
 3. No external Cassandra setup is required
@@ -23,7 +28,8 @@ The tests use `ory/dockertest` to run a Cassandra container for integration test
 ### Test Suite Structure
 
 - `main_test.go` - Test suite entry point that manages the Docker container lifecycle
-  - Starts Cassandra container before tests
+  - Detects environment (local vs docker-compose)
+  - Starts Cassandra container (local mode) or connects to existing service (docker-compose mode)
   - Creates test keyspace and tables
   - Initializes test session
   - Cleans up after all tests complete
@@ -47,7 +53,44 @@ All dependencies are managed via go.mod:
 
 ## Running the Tests
 
-### Run All Tests
+### Using Makefile (Recommended)
+
+The easiest way to run tests is using the provided Makefile targets:
+
+#### Run Tests (Default - uses docker-compose)
+```bash
+make test
+```
+This is the recommended approach for all platforms, especially macOS.
+
+#### Run Tests with Docker Compose (Best for macOS)
+```bash
+make test-docker-compose
+```
+This starts a Cassandra container via docker-compose and runs tests against it. This avoids the port mapping issues that occur on macOS with dockertest.
+
+#### Run Tests Locally
+```bash
+make test-local
+```
+Uses dockertest to spin up a container. May fail on macOS due to Docker networking issues.
+
+#### Run Tests with Coverage
+```bash
+make test-coverage
+```
+Generates a coverage report in `coverage.html`.
+
+#### Run Tests in Docker Container
+```bash
+make test-docker
+```
+Runs tests inside a Docker container with access to the Docker socket.
+
+### Direct Go Command
+
+You can also run tests directly with go:
+
 ```bash
 go test ./internal/action/... -v -timeout 15m
 ```
@@ -61,11 +104,6 @@ The `-timeout 15m` flag is important as the first run needs to:
 ### Run Specific Test
 ```bash
 go test ./internal/action/... -v -run TestListKeyspaces
-```
-
-### Run Tests with Coverage
-```bash
-go test ./internal/action/... -v -cover -timeout 15m
 ```
 
 ### Run Tests without Docker
@@ -143,6 +181,18 @@ Test data is automatically inserted into these tables.
 
 ## Troubleshooting
 
+### macOS Connection Errors (MOST COMMON)
+
+If you see errors like:
+```
+gocql: unable to dial control conn ::1:55006: dial tcp [::1]:55006: connect: connection refused
+gocql: unable to dial control conn 127.0.0.1:55006: dial tcp 127.0.0.1:55006: connect: connection refused
+```
+
+**Solution:** Use `make test` or `make test-docker-compose` instead of `make test-local`.
+
+**Why?** Docker Desktop for Mac uses a VM, and dockertest's port mapping doesn't always work correctly. The docker-compose approach uses Docker's internal networking, which is more reliable.
+
 ### Docker Connection Issues
 If you get errors about Docker connection:
 1. Ensure Docker daemon is running: `docker ps`
@@ -152,13 +202,15 @@ If you get errors about Docker connection:
 ### Container Startup Timeouts
 If Cassandra takes too long to start:
 1. Increase timeout: `-timeout 20m`
-2. Check Docker resources (CPU/Memory)
+2. Check Docker resources (CPU/Memory) in Docker Desktop settings
 3. Check Docker logs: `docker logs <container-id>`
+4. Wait for healthcheck: The docker-compose setup includes a healthcheck
 
 ### Port Conflicts
 If port 9042 is already in use:
-- The tests use Docker's automatic port mapping
+- The docker-compose setup exposes 9042, so stop any running Cassandra instances
 - Check for other Cassandra instances: `docker ps`
+- Stop conflicting containers: `docker stop <container-id>`
 
 ## Continuous Integration
 

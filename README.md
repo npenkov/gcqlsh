@@ -95,6 +95,44 @@ Package dependencies
  * [Color](https://github.com/fatih/color)
  * [Gocql](https://github.com/gocql/gocql)
 
+Development
+----
+
+### Running Tests
+
+The project includes comprehensive unit tests that run against a real Cassandra instance using Docker.
+
+**Quick Start (Recommended for all platforms, especially macOS):**
+```bash
+make test
+```
+
+**Alternative test commands:**
+```bash
+make test-local          # Run tests locally (may fail on macOS)
+make test-docker-compose # Run tests using docker-compose (best for macOS)
+make test-coverage       # Run tests with coverage report
+```
+
+**macOS Users:** If you encounter connection errors like:
+```
+gocql: unable to dial control conn 127.0.0.1:55006: connect: connection refused
+```
+Use `make test` (which runs docker-compose mode) instead of `make test-local`.
+
+**Why?** Docker Desktop for Mac uses a VM, and direct port mapping from dockertest doesn't always work. The docker-compose approach uses Docker's internal networking for reliable connectivity.
+
+For more details, see [internal/action/README_TESTS.md](internal/action/README_TESTS.md).
+
+### Building
+
+```bash
+make build              # Build all platforms
+make linux              # Build for Linux
+make darwin             # Build for macOS
+make windows            # Build for Windows
+```
+
 ----
 
 Written with [vim-go](https://github.com/fatih/vim-go)

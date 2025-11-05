@@ -1,0 +1,26 @@
+# Dockerfile for running tests
+FROM golang:1.24-alpine
+
+# Install required packages
+RUN apk add --no-cache \
+    git \
+    make \
+    docker-cli \
+    bash
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the entire project
+COPY . .
+
+# Set environment variables for testing
+ENV CGO_ENABLED=0
+ENV GO_TEST_TIMEOUT=15m
+
+# Default command runs tests
+CMD ["sh", "-c", "go test -v ./internal/action/... -timeout ${GO_TEST_TIMEOUT}"]
