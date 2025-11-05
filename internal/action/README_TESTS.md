@@ -212,6 +212,22 @@ If port 9042 is already in use:
 - Check for other Cassandra instances: `docker ps`
 - Stop conflicting containers: `docker stop <container-id>`
 
+### Cassandra Configuration Errors
+If you see errors like:
+```
+listen_address cannot be a wildcard address (0.0.0.0)!
+```
+
+This has been fixed in the configuration. The docker-compose and test setup now use:
+- `CASSANDRA_RPC_ADDRESS=0.0.0.0` (for client connections - correct)
+- `CASSANDRA_BROADCAST_ADDRESS` (for node identification)
+- No `CASSANDRA_LISTEN_ADDRESS` (avoids the wildcard error)
+
+If you're modifying the configuration, remember:
+- `LISTEN_ADDRESS` is for inter-node communication (cannot be 0.0.0.0 in Cassandra 4.x)
+- `RPC_ADDRESS` is for CQL client connections (can be 0.0.0.0)
+- `BROADCAST_ADDRESS` is the address nodes advertise to each other
+
 ## Continuous Integration
 
 For CI/CD environments without Docker:
