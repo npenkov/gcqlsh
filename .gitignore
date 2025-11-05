@@ -23,5 +23,13 @@ _testmain.go
 *.test
 *.prof
 
+# But allow test-related Docker files
+!Dockerfile.test
+!docker-compose.test.yml
+
 distr/
 gcqlsh_*
+
+# Test coverage
+coverage.out
+coverage.html
