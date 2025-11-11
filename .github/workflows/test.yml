@@ -24,11 +24,11 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Start Cassandra with docker-compose
+      - name: Start Cassandra with docker compose
         run: |
-          docker-compose -f docker-compose.test.yml up -d cassandra
+          docker compose -f docker-compose.test.yml up -d cassandra
           echo "Waiting for Cassandra to be healthy..."
-          timeout 300 bash -c 'until docker-compose -f docker-compose.test.yml ps | grep cassandra | grep -q "healthy"; do sleep 5; done'
+          timeout 300 bash -c 'until docker compose -f docker-compose.test.yml ps | grep cassandra | grep -q "healthy"; do sleep 5; done'
           echo "Cassandra is ready!"
 
       - name: Run tests
@@ -39,7 +39,7 @@ jobs:
 
       - name: Stop Cassandra
         if: always()
-        run: docker-compose -f docker-compose.test.yml down -v
+        run: docker compose -f docker-compose.test.yml down -v
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
