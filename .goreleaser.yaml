@@ -44,10 +44,8 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # Archive formats per OS
     builds:
       - gcqlsh
-    rlcp: true
     files:
       - LICENSE
       - README.md
