@@ -95,6 +95,52 @@ Package dependencies
  * [Color](https://github.com/fatih/color)
  * [Gocql](https://github.com/gocql/gocql)
 
+Releases
+----
+
+This project uses [GoReleaser](https://goreleaser.com/) for automated releases.
+
+### Creating a Release
+
+1. Update the `VERSION` file with the new version number:
+   ```bash
+   echo "0.0.4" > VERSION
+   ```
+
+2. Commit the version change:
+   ```bash
+   git add VERSION
+   git commit -m "Bump version to 0.0.4"
+   ```
+
+3. Create and push a tag:
+   ```bash
+   git tag -a v0.0.4 -m "Release v0.0.4"
+   git push origin v0.0.4
+   ```
+
+4. GitHub Actions will automatically:
+   - Run tests
+   - Build binaries for multiple platforms (Linux, macOS, Windows)
+   - Create checksums
+   - Generate release notes
+   - Publish the release on GitHub
+
+### Manual Release (Local Testing)
+
+To test the release process locally without publishing:
+
+```bash
+# Install goreleaser
+go install github.com/goreleaser/goreleaser/v2@latest
+
+# Test the release (snapshot mode)
+goreleaser release --snapshot --clean
+
+# Check the dist/ directory for generated artifacts
+ls -la dist/
+```
+
 Development
 ----
 
