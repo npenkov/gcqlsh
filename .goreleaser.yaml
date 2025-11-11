@@ -1,0 +1,135 @@
+# GoReleaser configuration for gcqlsh
+# Documentation: https://goreleaser.com
+
+version: 2
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # You may remove this if you don't need to generate anything before building.
+    - go mod download
+
+builds:
+  - id: gcqlsh
+    main: ./cmd/gcqlsh.go
+    binary: gcqlsh
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "7"
+    ignore:
+      # Reduce build matrix for less common combinations
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: gcqlsh-archive
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    builds:
+      - gcqlsh
+    files:
+      - LICENSE
+      - README.md
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - typo
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+  groups:
+    - title: 'New Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug Fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance Improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: 'Refactors'
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: Other
+      order: 999
+
+release:
+  # Repo name is extracted from git remote
+  github:
+    owner: npenkov
+    name: gcqlsh
+
+  # Header for the release notes
+  header: |
+    ## gcqlsh {{.Version}}
+
+    Cassandra command line shell - {{.Date}}
+
+  # Footer for the release notes
+  footer: |
+    **Full Changelog**: https://github.com/npenkov/gcqlsh/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ## Installation
+
+    ### Download Binary
+
+    Download the appropriate binary for your platform from the assets above.
+
+    ### Using Go
+
+    ```bash
+    go install github.com/npenkov/gcqlsh/cmd/gcqlsh@{{.Tag}}
+    ```
+
+    ### Verify Installation
+
+    ```bash
+    gcqlsh -v
+    ```
+
+# Generate Software Bill of Materials (requires syft to be installed)
+# Uncomment to enable SBOM generation:
+# sboms:
+#   - artifacts: archive
+
+# Announce the release (optional, can be configured later)
+# announce:
+#   twitter:
+#     enabled: true
+#     message_template: 'gcqlsh {{ .Tag }} is out! Check it out at {{ .ReleaseURL }}'

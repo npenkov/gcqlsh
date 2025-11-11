@@ -4,54 +4,49 @@ Cassandra command line shell written in Golang
 
 ![](screenshots/gcqlsh_rec.gif?raw=true)
 
-Motivation
-----
+## Motivation
 
 Having a cassandra command line shell utility in one binary distributable.
 
-Where it comes in hand?
-----
+## Where it comes in hand?
 
- * Building docker images for cassandra from Alpine with no Python.
- * Running cql shell on all platforms.
- * Automating cassandra schema creation without need to install python dependencies.
+- Building docker images for cassandra from Alpine with no Python.
+- Running cql shell on all platforms.
+- Automating cassandra schema creation without need to install python dependencies.
 
-Building
-----
+## Building
 
-``` 
+```
 go build -o gocqlsh src/github.com/npenkov/gcqlsh/cmd/gcqlsh.go
 ```
 
-Fatures
-----
- * Running DDL script files from command line
- * Support for Cassandra 2.1+/ScyllaDB
- * CQL Support
- * Statement tracing
- * `desc` command with
-   * `keyspaces` - simple list
-   * `tables` - simple list
-   * `table` - simple list of columns and types
- * Auto completition for commands:
-   * `use` - keyspaces
-   * `desc` - tables
-   * `select` - tables
-   * `update` - tables and columns
-   * `delete` - tables
-   * `insert` - tables
+## Fatures
 
-Still missing
-----
+- Running DDL script files from command line
+- Support for Cassandra 2.1+/ScyllaDB
+- CQL Support
+- Statement tracing
+- `desc` command with
+  - `keyspaces` - simple list
+  - `tables` - simple list
+  - `table` - simple list of columns and types
+- Auto completition for commands:
+  - `use` - keyspaces
+  - `desc` - tables
+  - `select` - tables
+  - `update` - tables and columns
+  - `delete` - tables
+  - `insert` - tables
 
- * Paging in interactive results
- * DDL Statements when describing Keyspaces and tables
- * Expanded rows
- * Code assistance for different keyspaces
- * Node token awareness
+## Still missing
 
-Command line help
-----
+- Paging in interactive results
+- DDL Statements when describing Keyspaces and tables
+- Expanded rows
+- Code assistance for different keyspaces
+- Node token awareness
+
+## Command line help
 
 ```
 gcqlsh -h
@@ -79,35 +74,83 @@ Usage of gcqlsh:
   -v    Version information
 ```
 
-Planned features
-----
- * `desc` for table
- * Column code assistance for 
-   * `select`
-   * `update`
-   * `delete` 
-   * `insert` 
+## Planned features
 
-Package dependencies
-----
+- `desc` for table
+- Column code assistance for
+  - `select`
+  - `update`
+  - `delete`
+  - `insert`
 
- * [Readline](https://github.com/chzyer/readline)
- * [Color](https://github.com/fatih/color)
- * [Gocql](https://github.com/gocql/gocql)
+## Package dependencies
 
-Development
-----
+- [Readline](https://github.com/chzyer/readline)
+- [Color](https://github.com/fatih/color)
+- [Gocql](https://github.com/gocql/gocql)
+
+## Releases
+
+This project uses [GoReleaser](https://goreleaser.com/) for automated releases.
+
+### Creating a Release
+
+1. Update the `VERSION` file with the new version number:
+
+   ```bash
+   echo "0.0.4" > VERSION
+   ```
+
+2. Commit the version change:
+
+   ```bash
+   git add VERSION
+   git commit -m "Bump version to 0.0.4"
+   ```
+
+3. Create and push a tag:
+
+   ```bash
+   git tag -a v0.0.4 -m "Release v0.0.4"
+   git push origin v0.0.4
+   ```
+
+4. GitHub Actions will automatically:
+   - Run tests
+   - Build binaries for multiple platforms (Linux, macOS, Windows)
+   - Create checksums
+   - Generate release notes
+   - Publish the release on GitHub
+
+### Manual Release (Local Testing)
+
+To test the release process locally without publishing:
+
+```bash
+# Install goreleaser
+go install github.com/goreleaser/goreleaser/v2@latest
+
+# Test the release (snapshot mode)
+goreleaser release --snapshot --clean
+
+# Check the dist/ directory for generated artifacts
+ls -la dist/
+```
+
+## Development
 
 ### Running Tests
 
 The project includes comprehensive unit tests that run against a real Cassandra instance using Docker.
 
 **Quick Start (Recommended for all platforms, especially macOS):**
+
 ```bash
 make test
 ```
 
 **Alternative test commands:**
+
 ```bash
 make test-local          # Run tests locally (may fail on macOS)
 make test-docker-compose # Run tests using docker-compose (best for macOS)
@@ -115,9 +158,11 @@ make test-coverage       # Run tests with coverage report
 ```
 
 **macOS Users:** If you encounter connection errors like:
+
 ```
 gocql: unable to dial control conn 127.0.0.1:55006: connect: connection refused
 ```
+
 Use `make test` (which runs docker-compose mode) instead of `make test-local`.
 
 **Why?** Docker Desktop for Mac uses a VM, and direct port mapping from dockertest doesn't always work. The docker-compose approach uses Docker's internal networking for reliable connectivity.
@@ -133,14 +178,12 @@ make darwin             # Build for macOS
 make windows            # Build for Windows
 ```
 
-----
+---
 
 Written with [vim-go](https://github.com/fatih/vim-go)
 
-License
--------
+## License
 
-> Copyright (c) 2016-2019 Nick Penkov. All rights reserved.
+> Copyright (c) 2016-2025 Nick Penkov. All rights reserved.
 > Use of this source code is governed by a MIT-style
 > license that can be found in the LICENSE file.
-
