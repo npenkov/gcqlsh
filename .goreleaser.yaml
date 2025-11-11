@@ -37,7 +37,6 @@ builds:
 
 archives:
   - id: gcqlsh-archive
-    format: tar.gz
     name_template: >-
       {{ .ProjectName }}_
       {{- .Os }}_
@@ -45,13 +44,16 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # Use zip for Windows
-    format_overrides:
-      - goos: windows
-        format: zip
+    # Archive formats per OS
+    builds:
+      - gcqlsh
+    rlcp: true
     files:
       - LICENSE
       - README.md
+    format_overrides:
+      - goos: windows
+        format: zip
 
 checksum:
   name_template: 'checksums.txt'
@@ -123,9 +125,10 @@ release:
     gcqlsh -v
     ```
 
-# Generate Software Bill of Materials
-sboms:
-  - artifacts: archive
+# Generate Software Bill of Materials (requires syft to be installed)
+# Uncomment to enable SBOM generation:
+# sboms:
+#   - artifacts: archive
 
 # Announce the release (optional, can be configured later)
 # announce:
