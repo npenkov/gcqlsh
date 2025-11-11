@@ -94,7 +94,7 @@ brews:
       owner: npenkov
       name: gcqlsh
       branch: main
-    folder: Formula
+    directory: Formula
     homepage: "https://github.com/npenkov/gcqlsh"
     description: "Cassandra command line shell written in Go"
     license: "MIT"
