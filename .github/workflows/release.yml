@@ -27,10 +27,25 @@ jobs:
           go-version: '1.24'
           cache: true
 
-      - name: Run tests
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Start Cassandra with docker compose
         run: |
-          go mod download
-          go test -v ./...
+          docker compose -f docker-compose.test.yml up -d cassandra
+          echo "Waiting for Cassandra to be healthy..."
+          timeout 300 bash -c 'until docker compose -f docker-compose.test.yml ps | grep cassandra | grep -q "healthy"; do sleep 5; done'
+          echo "Cassandra is ready!"
+
+      - name: Run tests
+        env:
+          CASSANDRA_HOST: 127.0.0.1
+          CASSANDRA_PORT: 9042
+        run: go test -v ./...
+
+      - name: Stop Cassandra
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
