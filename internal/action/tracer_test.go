@@ -37,7 +37,7 @@ func TestNewTracer(t *testing.T) {
 
 			tracer := NewTracer(testSession)
 			if tracer == nil {
-				t.Error("Expected tracer to be non-nil")
+				t.Fatal("Expected tracer to be non-nil")
 			}
 
 			if tracer.cks == nil {

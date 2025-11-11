@@ -97,7 +97,7 @@ func TestProcessCommand_UseKeyspace(t *testing.T) {
 	}
 
 	// Switch back to test_keyspace
-	ProcessCommand("USE test_keyspace", testSession)
+	_, _, _ = ProcessCommand("USE test_keyspace", testSession)
 	if testSession.ActiveKeyspace != "test_keyspace" {
 		t.Errorf("Expected active keyspace to be 'test_keyspace', got: %s", testSession.ActiveKeyspace)
 	}
@@ -130,7 +130,7 @@ func TestProcessCommand_UseKeyspaceUppercase(t *testing.T) {
 	}
 
 	// Switch back to test_keyspace
-	ProcessCommand("use test_keyspace;", testSession)
+	_, _, _ = ProcessCommand("use test_keyspace;", testSession)
 }
 
 func TestProcessCommand_DescribeKeyspaces(t *testing.T) {

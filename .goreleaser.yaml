@@ -89,6 +89,20 @@ changelog:
     - title: Other
       order: 999
 
+brews:
+  - repository:
+      owner: npenkov
+      name: gcqlsh
+      branch: main
+    folder: Formula
+    homepage: "https://github.com/npenkov/gcqlsh"
+    description: "Cassandra command line shell written in Go"
+    license: "MIT"
+    test: |
+      system "#{bin}/gcqlsh -v"
+    install: |
+      bin.install "gcqlsh"
+
 release:
   # Repo name is extracted from git remote
   github:
@@ -110,6 +124,19 @@ release:
     ### Download Binary
 
     Download the appropriate binary for your platform from the assets above.
+
+    ### Using Homebrew (macOS/Linux)
+
+    ```bash
+    brew tap npenkov/gcqlsh
+    brew install gcqlsh
+    ```
+
+    ### Using Nix Flakes
+
+    ```bash
+    nix profile install github:npenkov/gcqlsh
+    ```
 
     ### Using Go
 

@@ -118,7 +118,7 @@ func RunInteractiveSession(cks *db.CQLKeyspaceSession) error {
 			break
 		}
 		rl.SetPrompt(fmt.Sprintf("%s:%s> ", ProgramPromptPrefix, cks.ActiveKeyspace))
-		rl.SaveHistory(cmd)
+		_ = rl.SaveHistory(cmd)
 	}
 	return nil
 }
