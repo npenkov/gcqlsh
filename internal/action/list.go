@@ -27,7 +27,7 @@ func ListColumns(cks *db.CQLKeyspaceSession, prefix string) func(string) []strin
 		tableName = strings.Fields(tableName)[0]
 		columns, _ := cks.FetchColumns(tableName)
 		cols := make([]string, 0)
-		for col, _ := range columns {
+		for col := range columns {
 			cols = append(cols, col)
 		}
 		return cols
