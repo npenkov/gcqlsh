@@ -14,6 +14,69 @@ Having a cassandra command line shell utility in one binary distributable.
 - Running cql shell on all platforms.
 - Automating cassandra schema creation without need to install python dependencies.
 
+## Installation
+
+### Using Homebrew (macOS/Linux)
+
+```bash
+brew tap npenkov/gcqlsh
+brew install gcqlsh
+```
+
+Or install directly from the repository:
+
+```bash
+brew install npenkov/gcqlsh/gcqlsh
+```
+
+### Using Nix Flakes
+
+#### Direct run without installation
+
+```bash
+nix run github:npenkov/gcqlsh
+```
+
+#### Install to user profile
+
+```bash
+nix profile install github:npenkov/gcqlsh
+```
+
+#### Add to NixOS configuration or Home Manager
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    gcqlsh.url = "github:npenkov/gcqlsh";
+  };
+
+  outputs = { self, nixpkgs, gcqlsh }: {
+    # ... your configuration
+    environment.systemPackages = [
+      gcqlsh.packages.${system}.default
+    ];
+  };
+}
+```
+
+#### Development shell
+
+```bash
+nix develop github:npenkov/gcqlsh
+```
+
+### Using Go
+
+```bash
+go install github.com/npenkov/gcqlsh/cmd/gcqlsh@latest
+```
+
+### Download Binary
+
+Download the latest release binary for your platform from the [releases page](https://github.com/npenkov/gcqlsh/releases).
+
 ## Building
 
 ```

@@ -36,3 +36,7 @@ dist/
 # Test coverage
 coverage.out
 coverage.html
+
+# Nix
+result
+result-*
